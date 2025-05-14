@@ -50,16 +50,16 @@ pip install -r requirements.txt
 ```
 
 ## 🔥 Training
-* Download and process the dataset into the dataset folder.
-* Generate the corresponding dictionary file dic.txt.
-* Set the CUDA device in train.py and run 🚀:
+* Download and process the dataset into the `dataset` folder.
+* Generate the corresponding dictionary file `dic.txt`.
+* Set the CUDA device in `train.py` and run 🚀:
 ```bash
 cd AutoScaler
 python train.py
 ```
 
 ## 🧠 Inference
-* Set the checkpoint path in test.py and run:
+* Set the checkpoint path in `test.py` and run:
 ```bash
 python test.py
 ```
