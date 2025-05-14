@@ -1,14 +1,34 @@
 <h1 align="center">AutoScaler</h1>
 
-<div align="center">
+<p align="center">
   <strong>AutoScaler: Self Scale Alignment for Handwritten Mathematical Expression Recognition</strong><br>
   <em>Pattern Recognition (PR), 2025</em>
-[![GitHub Badge](https://img.shields.io/badge/GitHub-WGeong-blueviolet?logo=github)](https://github.com/W-Geong) [![GitHub Badge](https://img.shields.io/badge/GitHub-DLVC-success?logo=github)](https://github.com/HCIILAB)
+</p>
+<p align="center">
+  <a href="https://github.com/W-Geong">
+    <img src="https://img.shields.io/badge/GitHub-WGeong-blueviolet?logo=github" alt="GitHub WGeong">
+  </a>
+  <a href="https://github.com/HCIILAB">
+    <img src="https://img.shields.io/badge/GitHub-DLVC-success?logo=github" alt="GitHub DLVC">
+  </a>
+</p>
 
-[![Python 3.7 Badge](https://img.shields.io/badge/Python-3.7-blue?link=https%3A%2F%2Fwww.python.org%2Fdownloads%2Frelease%2Fpython-370%2F)](https://www.python.org/downloads/release/python-370/) [![PyTorch 1.8.1 Badge](https://img.shields.io/badge/PyTorch-1.8.1-yellowgreen?link=https%3A%2F%2Fpytorch.org%2F)](https://pytorch.org/) [![PyTorch Lightning Badge](https://img.shields.io/badge/PyTorch%20Lightning-1.4.9-orange?link=https%3A%2F%2Fwww.pytorchlightning.ai%2F)](https://www.pytorchlightning.ai/)
-</div>
-![intro](/assets/intro.png)
-![overall](/assets/main.png)
+<p align="center">
+  <a href="https://www.python.org/downloads/release/python-3100/">
+    <img src="https://img.shields.io/badge/Python-3.10-blue" alt="Python 3.10">
+  </a>
+  <a href="https://pytorch.org/">
+    <img src="https://img.shields.io/badge/PyTorch-1.8.1-yellowgreen" alt="PyTorch 1.8.1">
+  </a>
+  <a href="https://www.pytorchlightning.ai/">
+    <img src="https://img.shields.io/badge/PyTorch%20Lightning-1.4.9-orange" alt="PyTorch Lightning 1.4.9">
+  </a>
+</p>
+
+
+
+![intro](./assets/intro.png)
+![overall](./assets/main.png)
 
 ## 🛠️ Installation
 
