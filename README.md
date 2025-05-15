@@ -1,8 +1,8 @@
+![intro](./assets/intro.png)
 <h1 align="center">AutoScaler</h1>
 
 <p align="center">
   <strong>AutoScaler: Self Scale Alignment for Handwritten Mathematical Expression Recognition</strong><br>
-  <em>Pattern Recognition (PR), 2025</em>
 </p>
 <p align="center">
   <a href="https://github.com/W-Geong">
@@ -26,8 +26,6 @@
 </p>
 
 
-
-![intro](./assets/intro.png)
 ![overall](./assets/main.png)
 
 ## 🛠️ Installation
