@@ -1,5 +1,5 @@
-from bttr.datamodule import UniDatamodule3
-from bttr.lit_autos import LitAutos
+from autos.datamodule import UniDatamodule3
+from autos.lit_autos import LitAutos
 from pytorch_lightning import Trainer, callbacks
 from pytorch_lightning import seed_everything
 from pytorch_lightning.strategies import DDPStrategy
@@ -8,9 +8,9 @@ import os
 
 if __name__ == '__main__':
     os.environ["CUDA_VISIBLE_DEVICES"] = "0"  
-    os.environ['MASTER_PORT'] = '28100'
+    os.environ['MASTER_PORT'] = '28101'
     seed_everything(2024)
-    datasets=['M2E']
+    datasets=['m2e']
     model = LitAutos(datasets=datasets,d_model=512,growth_rate=24,num_layers=16,nhead=8,num_decoder_layers=6,dim_feedforward=1024,dropout=0.3,
         beam_size=12,max_len=500,alpha=1.0,learning_rate=1.0,patience=3)
 

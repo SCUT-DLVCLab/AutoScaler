@@ -81,16 +81,4 @@ def find_best(epoch_id):
     print(acc/len(datas[32].keys()))
     print(len(datas[32].keys()))
 
-find_best(73)
-
-# epoch_ids=[59,73,99,129,167]
-# epoch_ids=[73]
-# scales=list(range(32,129,8))
-# for epoch_i in epoch_ids:
-#     print('Epoch',epoch_i)
-#     for scale in scales:
-#         ans_path=f'ans/{epoch_i}_{scale}.txt'
-#         with open(ans_path,'r',encoding='utf8')as f:
-#             content=f.readlines()
-#         acc=deal_a_file(content[:-1])
-#         print(f'{epoch_i}_{scale}',acc)
+find_best(199)
