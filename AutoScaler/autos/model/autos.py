@@ -50,7 +50,7 @@ class AUTOS(pl.LightningModule):
         FloatTensor
             [2b, l, vocab_size]
         """
-        feature, mask = self.encoder(img, img_mask)  # [b, t, d]
+        feature, mask, shapes = self.encoder(img, img_mask)  # [b, t, d]
         # feature = torch.cat((feature, feature), dim=0)  # [2b, t, d]
         # mask = torch.cat((mask, mask), dim=0)
 
@@ -79,7 +79,7 @@ class AUTOS(pl.LightningModule):
         feature, mask, shapes = self.encoder(img, img_mask)  # [1, t, d]
         return self.decoder.ar(feature, mask, beam_size, max_len, shapes)
     
-    def ose_ar(
+    def xscale_search(
         self, img: FloatTensor, img_mask: LongTensor, beam_size: int, max_len: int
     ) -> List[Hypothesis]:
         """run bi-direction beam search for given img
@@ -98,7 +98,7 @@ class AUTOS(pl.LightningModule):
         List[Hypothesis]
         """
         feature, mask = self.encoder(img, img_mask)  # [s, t, d]
-        return self.decoder.ose_ar(feature, mask, beam_size, max_len)
+        return self.decoder.xscale_search(feature, mask, beam_size, max_len)
     
     def beam_search(
         self, img: FloatTensor, img_mask: LongTensor, beam_size: int, max_len: int

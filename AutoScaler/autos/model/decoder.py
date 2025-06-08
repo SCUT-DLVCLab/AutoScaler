@@ -8,11 +8,11 @@ from einops import rearrange, repeat
 from torch import FloatTensor, LongTensor
 from .transformer import TransformerDecoderLayer,TransformerDecoder
 
-from bttr.datamodule import master_envocab
-from bttr.model.pos_enc import WordPosEnc, WordRotaryEmbed
-from bttr.utils import Hypothesis, to_tgt_output
+from autos.datamodule import master_envocab
+from autos.model.pos_enc import WordPosEnc, WordRotaryEmbed
+from autos.utils import Hypothesis, to_tgt_output
 import pickle
-from . import debug
+
 vocab_size=len(master_envocab)
 
 def _build_transformer_decoder(
@@ -135,39 +135,100 @@ class Decoder(pl.LightningModule):
         return self.greedy_decode(src, mask, max_len, shapes)
         return self.beam_search(src, mask, beam_size, max_len)
     
-    def ose_ar(self, src: FloatTensor, mask: LongTensor, beam_size: int, max_len: int):
-        return self.batch_greedy_decode(src, mask, max_len)
-        return self.beam_search(src, mask, beam_size, max_len)
-    
-    def batch_greedy_decode(self, src: FloatTensor, mask: LongTensor, max_len: int,) -> Hypothesis:
+    def xscale_search(self, src: FloatTensor, mask: LongTensor, beam_size: int, max_len: int,) -> List[Hypothesis]:
+        assert (len(src)==len(mask)), f"img mask num mismatch"
 
-        # start_w = vocab.word2id('[SOM]')
-        # stop_w = vocab.word2id('[EOM]')
-        # new_char_pos = vocab.word2id('[PAD]')
-        start_w = 1
-        stop_w = 2
-        new_char_pos = 0
-        new_char_scores = 0
+        xn=len(src) # the scale space dim
 
-        bz=src.shape[0]
+        start_w = vocab.SOS_IDX
+        stop_w = vocab.EOS_IDX
 
-        hypotheses = torch.full((bz, max_len + 1), fill_value=master_envocab.PAD_IDX, dtype=torch.long, device=self.device)
-        hypotheses[:,0] = start_w
-        
-        is_done=[False]*bz
-        t=0
-        while t<max_len and sum(is_done)!=bz:
-            out= self(src, mask, hypotheses)
-            new_char_outputs = out[:, t, :]
-            new_char_scores, new_char_pos = torch.topk(new_char_outputs, k=1)
-            for i in range(bz):
-                hypotheses[i][t+1] = new_char_pos[i]
-                if is_done[i]==False and new_char_pos[i].item()==stop_w:
-                    is_done[i]=True
-            t+=1
-            if sum(is_done)>=3:
+        hyp_num=1 #current hyp, 1 for init
+        hypotheses = torch.full(
+            (xn, hyp_num, max_len + 1),
+            fill_value=vocab.PAD_IDX,
+            dtype=torch.long,
+            device=self.device,
+        )
+        hypotheses[:,:, 0] = start_w
+
+        hyp_scores = torch.zeros(xn, hyp_num, dtype=torch.float, device=self.device)
+        completed_hypotheses: List[Hypothesis] = []
+
+        src=src
+
+        t = 0
+        while len(completed_hypotheses) < beam_size and t < max_len:
+            hyp_num = hypotheses.size(1)
+            assert hyp_num <= beam_size, f"hyp_num: {hyp_num}, xbeam_size: {beam_size}"
+
+            exp_src = repeat(src, 'x h w c -> x k h w c', k=hyp_num)
+            exp_mask = repeat(mask, "x h w -> x k h w", k=hyp_num)
+
+            exp_src = rearrange(exp_src, 'x k h w c -> (x k) h w c')
+            exp_mask = rearrange(exp_mask, "x k h w -> (x k) h w")
+            exp_hypotheses=rearrange(hypotheses, "x k l -> (x k) l")
+            
+            decode_outputs = self(exp_src, exp_mask, exp_hypotheses)[:, t, :] # x b t -> (x b) t
+
+            log_p_t = F.log_softmax(decode_outputs, dim=-1)
+            log_p_t = rearrange(log_p_t, "(x k) e -> x k e",x=xn)
+
+            live_hyp_num = beam_size - len(completed_hypotheses)
+            exp_hyp_scores = repeat(hyp_scores, "x b ->x b e", e=vocab_size)
+            xcontinuous_hyp_scores = rearrange(exp_hyp_scores + log_p_t, "x b e -> (x b e)")
+            top_cand_hyp_scores, top_cand_hyp_pos = torch.topk(
+                xcontinuous_hyp_scores, k=live_hyp_num
+            )
+            
+            be=xcontinuous_hyp_scores.shape[0]//xn # b*e
+            prev_scale_ids=top_cand_hyp_pos//be
+            prev_hyp_ids=(top_cand_hyp_pos-prev_scale_ids*be)//vocab_size
+            hyp_word_ids = (top_cand_hyp_pos-prev_scale_ids*be)%vocab_size
+
+            t += 1
+            new_hypotheses = []
+            new_hyp_scores = []
+
+            for prev_scale_id, prev_hyp_id, hyp_word_id, cand_new_hyp_score in zip(
+                    prev_scale_ids, prev_hyp_ids, hyp_word_ids, top_cand_hyp_scores
+            ):
+                cand_new_hyp_score = cand_new_hyp_score.detach().item()
+                hypotheses[prev_scale_id, prev_hyp_id, t] = hyp_word_id
+
+                if hyp_word_id == stop_w:
+                    completed_hypotheses.append(
+                        Hypothesis(seq_tensor=hypotheses[prev_scale_id, prev_hyp_id, 1:t].detach().clone(),  # remove START_W at first
+                            score=cand_new_hyp_score,
+                            direction='l2r',
+                        )
+                    )
+                else:
+                    new_hypotheses.append(hypotheses[prev_scale_id, prev_hyp_id].detach().clone())
+                    new_hyp_scores.append(cand_new_hyp_score)
+
+            if len(completed_hypotheses) == beam_size:
                 break
-        return Hypothesis(seq_tensor=hypotheses[:, 1:t].detach().clone(), score=new_char_scores, direction='l2r')# remove START_W at first
+
+            hypotheses = torch.stack(new_hypotheses, dim=0)
+            hypotheses = repeat(hypotheses, "b e-> x b e",x=xn)
+            hyp_scores = torch.tensor(
+                new_hyp_scores, dtype=torch.float, device=self.device
+            )
+            hyp_scores = repeat(hyp_scores,"b-> x b",x=xn)
+            
+
+        if len(completed_hypotheses) == 0:
+            completed_hypotheses.append(
+                Hypothesis(
+                    seq_tensor=hypotheses[0, 1:].detach().clone(),
+                    score=hyp_scores[0].detach().item(),
+                    direction='l2r',
+                )
+            )
+        best_hyp = max(completed_hypotheses,key=lambda h:h.score/len(h))
+
+        return [best_hyp]*xn
 
     def greedy_decode(self, src: FloatTensor, mask: LongTensor, max_len: int, shapes) -> Hypothesis:
         def just_dump(amaps):
@@ -203,9 +264,6 @@ class Decoder(pl.LightningModule):
         out=hypotheses[:, 1:t].detach().clone()[0].tolist()
         dump_map_data['pr']=out
 
-        with open('amap/dump_map_18238_80.pkl','wb')as f:
-            pickle.dump(dump_map_data,f)
-        exit()
         master_envocab.indices2label(out).replace('ma:','')
 
         return Hypothesis(seq_tensor=hypotheses[:, 1:t].detach().clone()[0], score=new_char_scores, direction='l2r')# remove START_W at first
