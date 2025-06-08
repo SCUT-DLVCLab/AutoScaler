@@ -2,7 +2,7 @@
 <h1 align="center">AutoScaler</h1>
 
 <p align="center">
-  <strong>AutoScaler: Self Scale Alignment for Handwritten Mathematical Expression Recognition</strong><br>
+  <strong>[PR 2026] AutoScaler: Self Scale Alignment for Handwritten Mathematical Expression Recognition</strong><br>
 </p>
 <p align="center">
   <a href="https://github.com/W-Geong">
